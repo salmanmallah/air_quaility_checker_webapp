@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AirWatch — IQAir Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg:          #07101f;
+      --glass:       rgba(255,255,255,0.055);
+      --glass-b:     rgba(255,255,255,0.11);
+      --glass-hov:   rgba(255,255,255,0.09);
+      --text:        #e8f4fd;
+      --muted:       rgba(232,244,253,0.48);
+      --accent:      #06b6d4;
+      --r:           20px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;overflow-x:hidden}
+
+    /* BG */
+    .bg-canvas{position:fixed;inset:0;z-index:0;overflow:hidden;background:radial-gradient(ellipse at 15% 15%,#082035 0%,#07101f 55%)}
+    .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.3;animation:drift 20s ease-in-out infinite}
+    .o1{width:650px;height:650px;background:#07304a;top:-180px;left:-120px}
+    .o2{width:500px;height:500px;background:#062232;bottom:-80px;right:-80px;animation-delay:-9s}
+    .o3{width:300px;height:300px;background:#051c2e;top:45%;left:60%;animation-delay:-5s}
+    @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(25px,-35px) scale(1.04)}70%{transform:translate(-15px,20px) scale(.97)}}
+
+    /* LAYOUT */
+    .page{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:2rem 1.25rem 5rem}
+
+    /* HEADER */
+    .hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2.2rem}
+    .logo{font-size:1.75rem;font-weight:800;background:linear-gradient(90deg,#06b6d4,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo small{font-weight:300}
+    .powered{font-size:.72rem;color:var(--muted);margin-top:2px}
+
+    /* GLASS */
+    .gc{background:var(--glass);border:1px solid var(--glass-b);border-radius:var(--r);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);transition:background .2s}
+    .gc:hover{background:var(--glass-hov)}
+
+    /* SEARCH PANEL */
+    .search-panel{padding:1.4rem 1.6rem;margin-bottom:1.2rem}
+    .search-panel .row{--bs-gutter-x:.7rem}
+    select.form-select, input.form-control{
+      background:rgba(255,255,255,0.07);border:1px solid var(--glass-b);
+      color:var(--text);font-family:'Outfit',sans-serif;font-size:.9rem;
+      border-radius:12px;padding:.6rem 1rem;outline:none;
+      transition:border .2s,box-shadow .2s;
+    }
+    select.form-select option{background:#0e1f33;color:var(--text)}
+    select.form-select:focus,input.form-control:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(6,182,212,.15);background:rgba(255,255,255,0.09)}
+    select.form-select:disabled{opacity:.45}
+    .btn-search{
+      background:linear-gradient(135deg,#06b6d4,#818cf8);border:none;border-radius:12px;
+      color:#fff;font-family:'Outfit',sans-serif;font-weight:600;font-size:.9rem;
+      padding:.62rem 1.4rem;cursor:pointer;transition:opacity .2s,transform .15s;white-space:nowrap;width:100%
+    }
+    .btn-search:hover{opacity:.85;transform:scale(1.02)}
+    .btn-locate{
+      background:rgba(6,182,212,.15);border:1px solid rgba(6,182,212,.3);border-radius:12px;
+      color:#38bdf8;font-family:'Outfit',sans-serif;font-size:.85rem;
+      padding:.55rem 1rem;cursor:pointer;transition:background .2s;width:100%
+    }
+    .btn-locate:hover{background:rgba(6,182,212,.25)}
+    .btn-secondary{
+      display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1rem;
+      border:1px solid rgba(255,255,255,.15);border-radius:14px;color:#fff;
+      text-decoration:none;transition:background .2s,transform .2s;
+    }
+    .btn-secondary:hover{background:rgba(255,255,255,.06);transform:translateY(-1px)}
+
+    /* HERO */
+    .hero-card{padding:2rem 2.2rem;margin-bottom:1.2rem;display:flex;flex-wrap:wrap;gap:2rem;align-items:center}
+    .hc-left{flex:1;min-width:200px}
+    .hc-city{font-size:1.6rem;font-weight:700}
+    .hc-sub{font-size:.82rem;color:var(--muted);margin-top:.15rem}
+
+    .ring-row{display:flex;align-items:center;gap:1.6rem;margin-top:1.3rem;flex-wrap:wrap}
+    .aqi-ring{
+      width:115px;height:115px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;flex-direction:column;
+      border:3px solid var(--rc,#06b6d4);
+      box-shadow:0 0 28px var(--rc,#06b6d4),inset 0 0 18px rgba(0,0,0,.35);
+      position:relative;transition:all .5s ease
+    }
+    .aqi-ring::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px solid var(--rc,#06b6d4);opacity:.25;animation:pr 2.2s ease-in-out infinite}
+    @keyframes pr{0%,100%{transform:scale(1);opacity:.25}50%{transform:scale(1.07);opacity:.08}}
+    .ring-num{font-size:2rem;font-weight:800;line-height:1;color:var(--rc,#06b6d4)}
+    .ring-lbl{font-size:.65rem;color:var(--muted)}
+    .ring-info .ri-label{font-size:1.25rem;font-weight:700}
+    .ring-info .ri-emoji{font-size:2rem}
+    .ri-advice{font-size:.8rem;color:var(--muted);max-width:250px;margin-top:.35rem;line-height:1.55}
+
+    /* WEATHER STRIP */
+    .wx-strip{display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1.2rem}
+    .wx-pill{
+      flex:1;min-width:130px;
+      background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;
+      padding:1rem 1.1rem;display:flex;align-items:center;gap:.7rem;
+      backdrop-filter:blur(12px);transition:transform .2s,background .2s
+    }
+    .wx-pill:hover{transform:translateY(-2px);background:var(--glass-hov)}
+    .wx-icon{font-size:1.3rem;background:linear-gradient(135deg,#06b6d4,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .wx-lbl{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+    .wx-val{font-size:1.05rem;font-weight:700}
+
+    /* POLLUTANT */
+    .sec-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;margin-bottom:.8rem;display:flex;align-items:center;gap:.4rem}
+    .sec-lbl::after{content:'';flex:1;height:1px;background:var(--glass-b)}
+
+    .main-poll-badge{
+      display:inline-flex;align-items:center;gap:.5rem;
+      background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.25);
+      border-radius:50px;padding:.45rem 1rem;font-size:.85rem;color:#38bdf8;
+      font-weight:600;margin-bottom:1.2rem
+    }
+
+    /* COMPARE */
+    .cmp-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem}
+    .cmp-row input{flex:1;min-width:200px}
+    .btn-cmp{
+      background:linear-gradient(135deg,#06b6d4,#818cf8);border:none;border-radius:12px;
+      color:#fff;font-family:'Outfit',sans-serif;font-weight:600;font-size:.88rem;
+      padding:.62rem 1.2rem;cursor:pointer;transition:opacity .2s;white-space:nowrap
+    }
+    .btn-cmp:hover{opacity:.85}
+
+    .cb-row{display:flex;align-items:center;gap:1rem;margin-bottom:.6rem}
+    .cb-city{min-width:100px;font-size:.88rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cb-track{flex:1;height:32px;background:rgba(255,255,255,0.05);border-radius:10px;overflow:hidden}
+    .cb-fill{height:100%;border-radius:10px;display:flex;align-items:center;padding:0 .7rem;font-size:.8rem;font-weight:700;transition:width .9s cubic-bezier(.25,.8,.25,1);min-width:55px}
+    .cb-tag{font-size:.75rem;color:var(--muted);min-width:90px;text-align:right}
+
+    /* CHART */
+    .chart-card{padding:1.4rem;margin-bottom:1.2rem}
+    .chart-wrap{position:relative;height:190px}
+
+    /* LOADING/ERR */
+    #loading{text-align:center;padding:4rem;display:none}
+    .spin{width:46px;height:46px;margin:0 auto 1rem;border:3px solid rgba(6,182,212,.15);border-top-color:#06b6d4;border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #err-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:14px;padding:.9rem 1.3rem;color:#fca5a5;display:none;margin-bottom:1.2rem}
+    #dashboard{display:none}
+
+    .fade-up{animation:fu .45s ease both}
+    @keyframes fu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+    /* AQI scale bar */
+    .aqi-scale{display:flex;border-radius:8px;overflow:hidden;height:8px;margin-top:.5rem;gap:2px}
+    .aqi-scale div{flex:1;border-radius:2px}
+
+    @media(max-width:600px){
+      .hero-card{padding:1.3rem}
+      .aqi-ring{width:90px;height:90px}
+      .ring-num{font-size:1.6rem}
+      .logo{font-size:1.35rem}
+    }
+  </style>
+</head>
+<body>
+<div class="bg-canvas"><div class="o1 orb"></div><div class="o2 orb"></div><div class="o3 orb"></div></div>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div>
+      <div class="logo">Air<small>Watch</small></div>
+      <div class="powered"><i class="bi bi-patch-check-fill" style="color:#06b6d4"></i> Powered by IQAir API</div>
+    </div>
+    <a class="btn-secondary" href="/author">Author Info</a>
+  </div>
+
+  <!-- Search Panel -->
+  <div class="gc search-panel fade-up" style="animation-delay:0s">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="sec-lbl mb-1" style="margin-bottom:.3rem!important"><i class="bi bi-globe2"></i> Country</label>
+        <select class="form-select" id="selCountry" onchange="onCountryChange()">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="sec-lbl mb-1" style="margin-bottom:.3rem!important"><i class="bi bi-map"></i> State</label>
+        <select class="form-select" id="selState" disabled onchange="onStateChange()">
+          <option value="">Select country first</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-3">
+        <label class="sec-lbl mb-1" style="margin-bottom:.3rem!important"><i class="bi bi-building"></i> City</label>
+        <select class="form-select" id="selCity" disabled>
+          <option value="">Select state first</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <button class="btn-search" onclick="loadAQI()"><i class="bi bi-search"></i> Analyze</button>
+      </div>
+      <div class="col-6 col-md-1">
+        <button class="btn-locate" onclick="loadNearest()" title="Detect my location"><i class="bi bi-geo-alt-fill"></i> Auto</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="err-box"><i class="bi bi-exclamation-triangle-fill me-2"></i><span id="err-text"></span></div>
+  <div id="loading"><div class="spin"></div><p style="color:var(--muted)">Fetching air quality data...</p></div>
+
+  <div id="dashboard">
+    <!-- Hero -->
+    <div class="gc hero-card fade-up" style="animation-delay:0s">
+      <div class="hc-left">
+        <div class="hc-city" id="hCity">—</div>
+        <div class="hc-sub" id="hSub"></div>
+        <div class="ring-row">
+          <div class="aqi-ring" id="aqiRing">
+            <div class="ring-num" id="aqiNum">—</div>
+            <div class="ring-lbl">US AQI</div>
+          </div>
+          <div class="ring-info">
+            <div class="ri-emoji" id="riEmoji">—</div>
+            <div class="ri-label" id="riLabel">—</div>
+            <div class="ri-advice" id="riAdvice">—</div>
+          </div>
+        </div>
+        <!-- AQI scale -->
+        <div class="aqi-scale mt-3" style="max-width:340px">
+          <div style="background:#22c55e" title="Good (0-50)"></div>
+          <div style="background:#eab308" title="Moderate (51-100)"></div>
+          <div style="background:#f97316" title="Unhealthy Sensitive (101-150)"></div>
+          <div style="background:#ef4444" title="Unhealthy (151-200)"></div>
+          <div style="background:#a855f7" title="Very Unhealthy (201-300)"></div>
+          <div style="background:#7c3aed" title="Hazardous (300+)"></div>
+        </div>
+        <div style="font-size:.68rem;color:var(--muted);max-width:340px;display:flex;justify-content:space-between;margin-top:.3rem">
+          <span>Good</span><span>Moderate</span><span>Unhealthy</span><span>Hazardous</span>
+        </div>
+      </div>
+      <div>
+        <div class="sec-lbl"><i class="bi bi-exclamation-circle"></i> Main Pollutant</div>
+        <div class="main-poll-badge" id="mainPoll"><i class="bi bi-wind"></i> —</div>
+        <div style="font-size:.8rem;color:var(--muted)">China AQI: <span id="aqiCN" style="color:var(--text);font-weight:600">—</span></div>
+      </div>
+    </div>
+
+    <!-- Weather strip -->
+    <div class="sec-lbl fade-up" style="animation-delay:.1s"><i class="bi bi-thermometer-sun"></i> Current Weather Conditions</div>
+    <div class="wx-strip fade-up" id="wxStrip" style="animation-delay:.12s"></div>
+
+    <!-- Compare -->
+    <div class="gc chart-card fade-up" style="animation-delay:.18s">
+      <div class="sec-lbl"><i class="bi bi-globe-asia-australia"></i> City Comparison (comma separated)</div>
+      <div class="cmp-row">
+        <input class="form-control" id="cmpInput" placeholder="e.g. Karachi,Lahore,Islamabad" />
+        <button class="btn-cmp" onclick="loadCompare()"><i class="bi bi-bar-chart-steps"></i> Compare</button>
+      </div>
+      <div id="cmpBars"><p style="color:var(--muted);font-size:.85rem">Enter cities above and press Compare</p></div>
+    </div>
+
+    <!-- AQI Gauge Chart -->
+    <div class="gc chart-card fade-up" style="animation-delay:.22s">
+      <div class="sec-lbl"><i class="bi bi-speedometer2"></i> AQI Gauge</div>
+      <div class="chart-wrap"><canvas id="gaugeChart"></canvas></div>
+    </div>
+
+  </div><!-- /dashboard -->
+</div>
+
+<script>
+let gaugeChart = null;
+
+const PAKISTAN_STATES = [
+  "Azad Kashmir","Balochistan","FATA","Gilgit-Baltistan",
+  "Islamabad","Khyber Pakhtunkhwa","Punjab","Sindh"
+];
+
+const PAKISTAN_CITIES = {
+  "Azad Kashmir":["Muzaffarabad","Mirpur","Kotli","Muzaffarabad","Bhimber"],
+  "Balochistan":["Quetta","Gwadar","Khuzdar","Sibi","Turbat"],
+  "FATA":["Peshawar","Bajaur","Khyber","Mohmand","Orakzai"],
+  "Gilgit-Baltistan":["Gilgit","Skardu","Hunza","Nagar","Diamer"],
+  "Islamabad":["Islamabad"],
+  "Khyber Pakhtunkhwa":["Peshawar","Mardan","Abbottabad","Swat","Kohat","Bannu","Dera Ismail Khan"],
+  "Punjab":["Lahore","Faisalabad","Rawalpindi","Multan","Gujranwala","Sialkot","Sargodha","Bahawalpur","Sahiwal","Jhelum"],
+  "Sindh":["Karachi","Hyderabad","Sukkur","Larkana","Mirpur Khas","Nawabshah","Thatta","Khairpur","Jacobabad","Badin"]
+};
+
+const PAKISTAN_CITY_COORDS = [
+  {city:"Karachi", state:"Sindh", lat:24.8607, lon:67.0011},
+  {city:"Lahore", state:"Punjab", lat:31.5204, lon:74.3587},
+  {city:"Islamabad", state:"Islamabad", lat:33.6844, lon:73.0479},
+  {city:"Peshawar", state:"Khyber Pakhtunkhwa", lat:34.0151, lon:71.5249},
+  {city:"Quetta", state:"Balochistan", lat:30.1798, lon:66.9750},
+  {city:"Multan", state:"Punjab", lat:30.1575, lon:71.5249},
+  {city:"Faisalabad", state:"Punjab", lat:31.4186, lon:73.0790},
+  {city:"Hyderabad", state:"Sindh", lat:25.3960, lon:68.3578},
+  {city:"Gilgit", state:"Gilgit-Baltistan", lat:35.9206, lon:74.3086},
+  {city:"Muzaffarabad", state:"Azad Kashmir", lat:34.3700, lon:73.4700}
+];
+
+const POLL_NAMES = {
+  p1:"PM1.0", p2:"PM2.5", p10:"PM10",
+  o3:"Ozone", n2:"NO₂",  s2:"SO₂",
+  co:"CO",    a:"Ammonia"
+};
+
+function levelColor(aqi){
+  if(aqi<=50)  return "#22c55e";
+  if(aqi<=100) return "#eab308";
+  if(aqi<=150) return "#f97316";
+  if(aqi<=200) return "#ef4444";
+  if(aqi<=300) return "#a855f7";
+  return "#7c3aed";
+}
+
+// ── Cascade dropdowns ──
+async function initCountries(){
+  const sel = document.getElementById("selCountry");
+  sel.innerHTML = "";
+  const o = document.createElement("option");
+  o.value = "Pakistan";
+  o.textContent = "Pakistan";
+  o.selected = true;
+  sel.appendChild(o);
+  onCountryChange();
+}
+
+async function onCountryChange(){
+  const country = document.getElementById("selCountry").value;
+  const sSel = document.getElementById("selState");
+  const cSel = document.getElementById("selCity");
+  sSel.disabled = true; cSel.disabled = true;
+  sSel.innerHTML = "<option>Loading...</option>";
+  cSel.innerHTML = "<option>Select state first</option>";
+  if(country === "Pakistan"){
+    const states = PAKISTAN_STATES;
+    sSel.innerHTML = "";
+    const allOpt = document.createElement("option");
+    allOpt.value = "__all__";
+    allOpt.textContent = "All provinces / all cities";
+    sSel.appendChild(allOpt);
+    states.forEach(state=>{
+      const o = document.createElement("option");
+      o.value = state; o.textContent = state;
+      if(state === "Sindh") o.selected = true;
+      sSel.appendChild(o);
+    });
+    sSel.disabled = false;
+    sSel.value = "__all__";
+    onStateChange();
+    return;
+  }
+  try{
+    const r = await fetch(`/api/states?country=${encodeURIComponent(country)}`);
+    const d = await r.json();
+    const states = d.data || [];
+    sSel.innerHTML = "";
+    const allOpt = document.createElement("option");
+    allOpt.value = "__all__";
+    allOpt.textContent = "All provinces / all cities";
+    sSel.appendChild(allOpt);
+    states.forEach(s=>{
+      const o = document.createElement("option");
+      o.value = s.state; o.textContent = s.state;
+      if(s.state==="Sindh") o.selected = true;
+      sSel.appendChild(o);
+    });
+    sSel.disabled = false;
+    sSel.value = "__all__";
+    onStateChange();
+  }catch(e){ sSel.innerHTML="<option>Error</option>"; }
+}
+
+async function onStateChange(){
+  const state   = document.getElementById("selState").value;
+  const country = document.getElementById("selCountry").value;
+  const cSel    = document.getElementById("selCity");
+  cSel.disabled = true;
+  cSel.innerHTML = "<option>Loading...</option>";
+  try{
+    let cities = [];
+    if(country === "Pakistan"){
+      if(state === "__all__"){
+        cities = Object.entries(PAKISTAN_CITIES).flatMap(([s, list]) => list.map(city => ({city, state: s})));
+      } else {
+        cities = (PAKISTAN_CITIES[state] || []).map(city => ({city, state}));
+      }
+    } else {
+      const url = state === "__all__"
+        ? `/api/cities?country=${encodeURIComponent(country)}&all=1`
+        : `/api/cities?state=${encodeURIComponent(state)}&country=${encodeURIComponent(country)}`;
+      const r = await fetch(url);
+      const d = await r.json();
+      cities = (d.data||[]);
+    }
+    cSel.innerHTML = "";
+    cities.forEach(c=>{
+      const o = document.createElement("option");
+      o.value = c.city;
+      o.textContent = c.state ? `${c.city} (${c.state})` : c.city;
+      if(c.state) o.dataset.state = c.state;
+      if(c.city==="Karachi") o.selected = true;
+      cSel.appendChild(o);
+    });
+    cSel.disabled = false;
+  }catch(e){ cSel.innerHTML="<option>Error</option>"; }
+}
+
+// ── Load AQI ──
+async function loadAQI(){
+  const citySel = document.getElementById("selCity");
+  const city    = citySel.value;
+  let state     = document.getElementById("selState").value;
+  const country = document.getElementById("selCountry").value;
+  if(state === "__all__"){
+    state = citySel.selectedOptions[0]?.dataset.state || "";
+  }
+  if(!city||!state||!country){ showErr("Please select Country, State and City."); return; }
+  await fetchAndRender(`/api/aqi?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&country=${encodeURIComponent(country)}`);
+}
+
+function getDistance(lat1, lon1, lat2, lon2){
+  const toRad = x => x * Math.PI / 180;
+  const R = 6371;
+  const dLat = toRad(lat2-lat1);
+  const dLon = toRad(lon2-lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function findNearestPakistanCity(lat, lon){
+  let best = null;
+  let bestDist = Infinity;
+  for(const place of PAKISTAN_CITY_COORDS){
+    const dist = getDistance(lat, lon, place.lat, place.lon);
+    if(dist < bestDist){
+      bestDist = dist;
+      best = place;
+    }
+  }
+  return best;
+}
+
+async function loadNearest(silent=false){
+  if(!navigator.geolocation){
+    if(!silent){
+      showErr("Geolocation not supported by this browser.");
+    }
+    return;
+  }
+  document.getElementById("err-box").style.display="none";
+  document.getElementById("loading").style.display="block";
+  try{
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {timeout:10000});
+    });
+    const {latitude, longitude} = position.coords;
+    const nearest = findNearestPakistanCity(latitude, longitude);
+    if(!nearest){
+      if(!silent){
+        showErr("Unable to determine nearest city from location.");
+      }
+      return;
+    }
+    document.getElementById("selCountry").value = "Pakistan";
+    await onCountryChange();
+    document.getElementById("selState").value = nearest.state;
+    await onStateChange();
+    const cSel = document.getElementById("selCity");
+    cSel.value = nearest.city;
+    await loadAQI();
+  }catch(err){
+    if(!silent){
+      const msg = err?.message || "Unable to detect location.";
+      showErr("Location failed: " + msg);
+    }
+  }finally{
+    document.getElementById("loading").style.display="none";
+  }
+}
+
+async function fetchAndRender(url){
+  document.getElementById("err-box").style.display="none";
+  document.getElementById("dashboard").style.display="none";
+  document.getElementById("loading").style.display="block";
+  try{
+    const r = await fetch(url);
+    const d = await r.json();
+    if(!r.ok){ showErr(d.error||"API error"); return; }
+    render(d);
+  }catch(e){ showErr("Network error: "+e.message); }
+  finally{ document.getElementById("loading").style.display="none"; }
+}
+
+function showErr(msg){
+  document.getElementById("err-text").textContent = msg;
+  document.getElementById("err-box").style.display = "block";
+  document.getElementById("loading").style.display = "none";
+}
+
+// ── Render ──
+function render(data){
+  const color = data.level.color;
+
+  document.getElementById("hCity").textContent  = data.city;
+  document.getElementById("hSub").textContent   = `${data.state}, ${data.country}`;
+  document.getElementById("aqiNum").textContent  = data.aqi_us;
+  document.getElementById("riEmoji").textContent = data.level.emoji;
+  document.getElementById("riLabel").textContent = data.level.label;
+  document.getElementById("riAdvice").textContent= data.level.advice;
+  document.getElementById("aqiCN").textContent   = data.aqi_cn ?? "N/A";
+  document.getElementById("mainPoll").innerHTML  = `<i class="bi bi-wind"></i> ${POLL_NAMES[data.main_pollutant] || data.main_pollutant}`;
+
+  const ring = document.getElementById("aqiRing");
+  ring.style.setProperty("--rc", color);
+  document.getElementById("aqiNum").style.color = color;
+
+  // Weather strip
+  const w = data.weather;
+  const wxItems = [
+    {icon:"bi-thermometer-half", lbl:"Temperature", val:`${w.temp}°C`},
+    {icon:"bi-droplet-fill",     lbl:"Humidity",    val:`${w.humidity}%`},
+    {icon:"bi-wind",             lbl:"Wind Speed",  val:`${w.wind} m/s`},
+    {icon:"bi-speedometer",      lbl:"Pressure",    val:`${w.pressure} hPa`},
+  ];
+  document.getElementById("wxStrip").innerHTML = wxItems.map(i=>`
+    <div class="wx-pill">
+      <span class="wx-icon"><i class="bi ${i.icon}"></i></span>
+      <div><div class="wx-lbl">${i.lbl}</div><div class="wx-val">${i.val}</div></div>
+    </div>`).join("");
+
+  // Gauge chart
+  if(gaugeChart) gaugeChart.destroy();
+  const aqi = data.aqi_us;
+  const max = 500;
+  gaugeChart = new Chart(document.getElementById("gaugeChart").getContext("2d"),{
+    type:"doughnut",
+    data:{
+      labels:["Good","Moderate","Unhealthy(S)","Unhealthy","Very Unhealthy","Hazardous","Remaining"],
+      datasets:[{
+        data:[50,50,50,50,100,100, Math.max(0, max-aqi), 0],
+        backgroundColor:["#22c55e","#eab308","#f97316","#ef4444","#a855f7","#7c3aed",
+          "rgba(255,255,255,0.06)"],
+        borderWidth:0,
+        circumference:180, rotation:-90,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      cutout:"70%",
+      plugins:{
+        legend:{display:false},
+        tooltip:{enabled:false},
+      }
+    },
+    plugins:[{
+      id:"needle",
+      afterDatasetDraw(chart){
+        const {ctx, chartArea:{top,bottom,left,right,width,height}} = chart;
+        const cx = left + width/2;
+        const cy = bottom;
+        const angle = Math.PI * (aqi/max) - Math.PI;
+        const len = Math.min(width,height)*0.38;
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(angle)*len, cy + Math.sin(angle)*len);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx,cy,7,0,Math.PI*2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.fillStyle = "rgba(232,244,253,0.9)";
+        ctx.font = "bold 18px Outfit";
+        ctx.textAlign = "center";
+        ctx.fillText(aqi, cx, cy-18);
+        ctx.font = "12px Outfit";
+        ctx.fillStyle = "rgba(232,244,253,0.5)";
+        ctx.fillText(data.level.label, cx, cy-2);
+        ctx.restore();
+      }
+    }]
+  });
+
+  document.getElementById("dashboard").style.display="block";
+}
+
+// ── Compare ──
+function renderCompare(cities){
+  const el = document.getElementById("cmpBars");
+  if(!cities.length){el.innerHTML=`<p style="color:var(--muted)">No results found.</p>`;return;}
+  const maxA = Math.max(...cities.map(c=>c.aqi),1);
+  el.innerHTML = cities.map(c=>{
+    const pct = Math.max(8,(c.aqi/maxA)*100);
+    return `<div class="cb-row">
+      <div class="cb-city" title="${c.city}">${c.city}</div>
+      <div class="cb-track">
+        <div class="cb-fill" style="width:${pct}%;background:linear-gradient(90deg,${c.level.color}88,${c.level.color})">
+          ${c.level.emoji} ${c.aqi}
+        </div>
+      </div>
+      <div class="cb-tag">${c.level.label}</div>
+    </div>`;
+  }).join("");
+}
+
+// compare endpoint still needs to return data
+// adding compare to app.py via inline fetch workaround:
+// we call /api/aqi for each city individually
+async function loadCompare(){
+  const raw = document.getElementById("cmpInput").value.trim();
+  if(!raw) return;
+  const cityList = raw.split(",").map(c=>c.trim()).filter(Boolean).slice(0,5);
+  const btn = document.querySelector(".btn-cmp");
+  btn.textContent="Loading..."; btn.disabled=true;
+  try{
+    const results = await Promise.allSettled(
+      cityList.map(city => fetch(`/api/nearest_name?city=${encodeURIComponent(city)}`).then(r=>r.json()))
+    );
+    // fallback: use open-meteo aqi for comparison names only
+    const cities = [];
+    for(const city of cityList){
+      try{
+        // geocode then fetch AQI from open-meteo as fallback for comparison
+        const gr = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`);
+        const gd = await gr.json();
+        if(!gd.results?.length) continue;
+        const {latitude:lat,longitude:lon,name} = gd.results[0];
+        const ar = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=european_aqi&timezone=auto`);
+        const ad = await ar.json();
+        const aqi_raw = ad.current?.european_aqi ?? 0;
+        // convert EU AQI to approx US AQI (multiply by ~2 for rough scale)
+        const aqi = Math.round(aqi_raw * 2);
+        const color = aqi<=50?"#22c55e":aqi<=100?"#eab308":aqi<=150?"#f97316":aqi<=200?"#ef4444":aqi<=300?"#a855f7":"#7c3aed";
+        const label = aqi<=50?"Good":aqi<=100?"Moderate":aqi<=150?"Unhealthy(S)":aqi<=200?"Unhealthy":aqi<=300?"Very Unhealthy":"Hazardous";
+        const emoji = aqi<=50?"😊":aqi<=100?"🙂":aqi<=150?"😐":aqi<=200?"😷":aqi<=300?"🤢":"☠️";
+        cities.push({city:name, aqi, level:{color,label,emoji}});
+      }catch(err){ continue; }
+    }
+    renderCompare(cities);
+  }catch(e){
+    document.getElementById("cmpBars").innerHTML=`<p style="color:#fca5a5">Error: ${e.message}</p>`;
+  }finally{
+    btn.innerHTML='<i class="bi bi-bar-chart-steps"></i> Compare'; btn.disabled=false;
+  }
+}
+
+// Init
+window.onload = async () => {
+  await initCountries();
+  document.getElementById("cmpInput").value = "Karachi, Lahore, Islamabad, Delhi";
+  await loadNearest(true);
+};
+</script>
+</body>
+</html>

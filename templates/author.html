@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Author Info — AirWatch</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <style>
+    :root {
+      --bg:          #07101f;
+      --glass:       rgba(255,255,255,0.055);
+      --glass-b:     rgba(255,255,255,0.11);
+      --glass-hov:   rgba(255,255,255,0.09);
+      --text:        #e8f4fd;
+      --muted:       rgba(232,244,253,0.48);
+      --accent:      #06b6d4;
+      --r:           20px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;overflow-x:hidden}
+    .bg-canvas{position:fixed;inset:0;z-index:0;overflow:hidden;background:radial-gradient(ellipse at 15% 15%,#082035 0%,#07101f 55%)}
+    .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.3;animation:drift 20s ease-in-out infinite}
+    .o1{width:650px;height:650px;background:#07304a;top:-180px;left:-120px}
+    .o2{width:500px;height:500px;background:#062232;bottom:-80px;right:-80px;animation-delay:-9s}
+    .o3{width:300px;height:300px;background:#051c2e;top:45%;left:60%;animation-delay:-5s}
+    @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(25px,-35px) scale(1.04)}70%{transform:translate(-15px,20px) scale(.97)}}
+    .page{position:relative;z-index:1;max-width:940px;margin:0 auto;padding:2rem 1.25rem 5rem}
+    .hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2.2rem}
+    .logo{font-size:1.75rem;font-weight:800;background:linear-gradient(90deg,#06b6d4,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo small{font-weight:300}
+    .powered{font-size:.72rem;color:var(--muted);margin-top:2px}
+    .gc{background:var(--glass);border:1px solid var(--glass-b);border-radius:var(--r);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);transition:background .2s}
+    .gc:hover{background:var(--glass-hov)}
+    .author-card{padding:2rem;}
+    .sec-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;margin-bottom:.8rem;display:flex;align-items:center;gap:.4rem}
+    .info-row{display:grid;grid-template-columns:1fr 2fr;gap:1rem;align-items:start}
+    .info-row label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:.45rem;display:block}
+    .info-row p{margin:0;font-size:1rem;color:var(--text);padding:.85rem 1rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;}
+    .chip-list{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.8rem}
+    .chip{padding:.5rem 1rem;border:1px solid rgba(255,255,255,.12);border-radius:999px;color:#a5f3fc;background:rgba(6,182,212,.12);font-size:.82rem}
+    .profile-box{border:1px solid rgba(96,165,250,.2);border-radius:20px;padding:1.2rem;background:rgba(15,23,42,.7);}
+    .profile-title{font-size:1.15rem;font-weight:700;margin-bottom:.8rem}
+    .bio-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:1rem;margin-top:1rem}
+    .bio-title{font-size:.9rem;font-weight:700;color:#93c5fd;margin-bottom:.45rem}
+    .bio-text{color:var(--muted);line-height:1.7;font-size:.95rem}
+    .btn-secondary{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1rem;border:1px solid rgba(255,255,255,.15);border-radius:14px;color:#fff;text-decoration:none;transition:background .2s,transform .2s}
+    .btn-secondary:hover{background:rgba(255,255,255,.06);transform:translateY(-1px)}
+    @media(max-width:768px){.info-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="bg-canvas"><div class="o1 orb"></div><div class="o2 orb"></div><div class="o3 orb"></div></div>
+<div class="page">
+  <div class="hdr">
+    <div>
+      <div class="logo">Air<small>Watch</small></div>
+      <div class="powered"><i class="bi bi-patch-check-fill" style="color:#06b6d4"></i> Powered by IQAir API</div>
+    </div>
+    <a class="btn-secondary" href="/">← Back to dashboard</a>
+  </div>
+
+  <div class="gc author-card fade-up">
+    <div class="sec-lbl"><i class="bi bi-person-circle"></i> Author Details</div>
+    <div class="profile-box">
+      <div class="profile-title">Salman Mallah</div>
+      <div class="chip-list">
+        <span class="chip">Junior Malware Analyst</span>
+        <span class="chip">Malware Analysis</span>
+        <span class="chip">Reverse Engineering</span>
+        <span class="chip">Threat Detection</span>
+        <span class="chip">Machine Learning Security</span>
+      </div>
+    </div>
+
+    <div class="info-row" style="margin-top:1.8rem">
+      <div>
+        <label>Name</label>
+        <p>Salman Mallah</p>
+      </div>
+      <div>
+        <label>Title</label>
+        <p>Junior Malware Analyst</p>
+      </div>
+      <div>
+        <label>Education</label>
+        <p>BS in Cyber Security, Mehran University of Engineering and Technology (MUET)</p>
+      </div>
+      <div>
+        <label>Specialization</label>
+        <p>Malware Analysis, Reverse Engineering, Threat Detection, Machine Learning-based Security</p>
+      </div>
+    </div>
+
+    <div class="bio-box">
+      <div class="bio-title">Short Bio</div>
+      <div class="bio-text">Salman Mallah is a Software Engineer and Cybersecurity professional specializing in malware analysis and vulnerability assessment. A final-year student at MUET, he focuses on developing machine learning solutions for advanced threat detection and digital security.</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
