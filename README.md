@@ -1,5 +1,9 @@
 # 🌬️ AirWatch — IQAir Powered Dashboard
 
+## Live Demo
+
+This app is live at: https://salman006.pythonanywhere.com/author
+
 ## Setup
 
 ```bash
