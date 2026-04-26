@@ -2,7 +2,7 @@
 
 ## Live Demo
 
-This app is live at: https://salman006.pythonanywhere.com/author
+This app is live at: https://salman006.pythonanywhere.com/
 
 ## Setup
 
